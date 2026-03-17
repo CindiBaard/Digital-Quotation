@@ -95,16 +95,26 @@ def generate_pdf(data):
 st.title("📝 Digital Quotation Generator")
 
 with st.sidebar:
+    # --- REFRESH BUTTON ---
+    if st.button("🆕 Start New Quote / Refresh", use_container_width=True):
+        st.session_state.clear()
+        st.rerun()
+    
+    st.divider()
+    
     st.header("📋 New Quotation Details")
     quote_no = st.text_input("Quote No.", value=f"Q-{datetime.now().strftime('%y%m%d%H%M')}")
     pre_prod_no = st.text_input("Pre-Prod No.")
     client = st.text_input("Client")
     description = st.text_area("Description / Project Name")
+    
     st.divider()
+    
     with st.expander("🛠️ Foil Cost Calculator (Internal Only)"):
         f_nett = st.number_input("Supplier Nett Cost (Foil)", min_value=0.0, value=0.0, step=10.0)
         f_rate = f_nett * 1.56
         st.write(f"Marked up Rate: **R{f_rate:,.2f}**")
+        
     st.subheader("🔢 Enter Units")
     u_artwork = st.number_input("Artwork setup and Trial", min_value=0, value=0)
     u_adjust = st.number_input("Adjust artwork supplied by Client", min_value=0, value=0)
@@ -141,7 +151,6 @@ with st.sidebar:
         st.balloons()
 
 # --- Main Area Display ---
-# We define the tabs out here so they always exist!
 tab1, tab2 = st.tabs(["📄 Quotation Preview", "📊 Spreadsheet Database"])
 
 with tab1:
@@ -167,7 +176,7 @@ with tab1:
             pdf_bytes = generate_pdf(q)
             st.download_button(label="📥 Download Quote as PDF", data=bytes(pdf_bytes), file_name=f"Quotation_{q['Quote No.']}.pdf", mime="application/pdf", use_container_width=True)
     else:
-        st.info("👈 Enter details in the sidebar and click 'Generate & Save Quote' to see the preview here.")
+        st.info("👈 Enter details in the sidebar and click 'Generate & Save Quote' to see the preview.")
 
 with tab2:
     st.subheader("Google Sheets Database")
@@ -192,7 +201,7 @@ with tab2:
                 to_delete = st.selectbox("Select Quote to remove:", quote_list)
             with col_del2:
                 st.write(" ") # Spacer
-                if st.button("Delete Permanently", type="secondary"):
+                if st.button("Delete Permanently"):
                     try:
                         cell = sheet.find(str(to_delete))
                         sheet.delete_rows(cell.row)
@@ -202,16 +211,10 @@ with tab2:
                         st.error("Could not locate that quote in the sheet.")
         else:
             st.write("Database is empty.")
+            
+        st.divider()
+        if st.button("🔄 Refresh Data View"):
+            st.dataframe(pd.DataFrame(sheet.get_all_records()), use_container_width=True)
+            
     except Exception as e:
         st.error(f"Database Error: {e}")
-
-    st.divider()
-    
-    # --- VIEW DATA ---
-    if st.button("🔄 Refresh Data View"):
-        try:
-            # We already defined 'sheet' above
-            latest_data = sheet.get_all_records()
-            st.dataframe(pd.DataFrame(latest_data), use_container_width=True)
-        except Exception as e:
-            st.error(f"Error refreshing: {e}")
