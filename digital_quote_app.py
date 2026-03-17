@@ -141,13 +141,12 @@ with st.sidebar:
         st.balloons()
 
 # --- Main Area Display ---
-if 'last_quote' in st.session_state:
-    q = st.session_state['last_quote']
-    
-    # Create tabs
-    tab1, tab2 = st.tabs(["📄 Quotation Preview", "📊 Spreadsheet Database"])
+# We define the tabs out here so they always exist!
+tab1, tab2 = st.tabs(["📄 Quotation Preview", "📊 Spreadsheet Database"])
 
-    with tab1:
+with tab1:
+    if 'last_quote' in st.session_state:
+        q = st.session_state['last_quote']
         st.subheader(f"Quotation Preview: {q['Quote No.']}")
         st.write(f"**Client:** {q['Client']} | **Pre-Prod:** {q['Pre-Prod No.']} | **Date:** {datetime.now().strftime('%Y-%m-%d')}")
         st.info(f"**Project:** {q['Description']}")
@@ -167,63 +166,52 @@ if 'last_quote' in st.session_state:
             st.divider()
             pdf_bytes = generate_pdf(q)
             st.download_button(label="📥 Download Quote as PDF", data=bytes(pdf_bytes), file_name=f"Quotation_{q['Quote No.']}.pdf", mime="application/pdf", use_container_width=True)
-        else:
-            st.warning("Please enter at least 1 unit to generate a preview.")
+    else:
+        st.info("👈 Enter details in the sidebar and click 'Generate & Save Quote' to see the preview here.")
 
 with tab2:
-        st.subheader("Google Sheets Database")
-        sheet_url = "https://docs.google.com/spreadsheets/d/1wGEVCxH4wEra_BRa-3z9QWaH8g5dvCQy-xO2-KJhciM/edit"
-        st.link_button("🚀 Open Full Spreadsheet (Edit Mode)", sheet_url, use_container_width=True)
+    st.subheader("Google Sheets Database")
+    sheet_url = "https://docs.google.com/spreadsheets/d/1wGEVCxH4wEra_BRa-3z9QWaH8g5dvCQy-xO2-KJhciM/edit"
+    st.link_button("🚀 Open Full Spreadsheet (Edit Mode)", sheet_url, use_container_width=True)
+    
+    st.divider()
+    
+    # --- DELETE SECTION ---
+    st.subheader("🗑️ Delete a Quotation")
+    try:
+        client = get_gsheet_client()
+        sheet = client.open_by_key("1wGEVCxH4wEra_BRa-3z9QWaH8g5dvCQy-xO2-KJhciM").sheet1
+        all_data = sheet.get_all_records()
         
-        st.divider()
-        
-        # --- DELETE FUNCTIONALITY ---
-        st.subheader("🗑️ Delete a Quotation")
-        
-        # Fetch the latest data to populate a dropdown
-        try:
-            client = get_gsheet_client()
-            sheet = client.open_by_key("1wGEVCxH4wEra_BRa-3z9QWaH8g5dvCQy-xO2-KJhciM").sheet1
-            all_data = sheet.get_all_records()
+        if all_data:
+            df_db = pd.DataFrame(all_data)
+            quote_list = df_db["Quote No."].tolist()
             
-            if all_data:
-                df_temp = pd.DataFrame(all_data)
-                # Create a list of Quote Numbers for the dropdown
-                quote_list = df_temp["Quote No."].tolist()
-                
-                col_del1, col_del2 = st.columns([3, 1])
-                with col_del1:
-                    to_delete = st.selectbox("Select Quote Number to remove:", quote_list)
-                with col_del2:
-                    st.write(" ") # Padding
-                    confirm_delete = st.button("Delete Permanent", type="secondary", use_container_width=True)
-                
-                if confirm_delete:
-                    # Find the row index (gspread is 1-indexed, +1 for header)
-                    # We find the first match for the Quote Number
+            col_del1, col_del2 = st.columns([3, 1])
+            with col_del1:
+                to_delete = st.selectbox("Select Quote to remove:", quote_list)
+            with col_del2:
+                st.write(" ") # Spacer
+                if st.button("Delete Permanently", type="secondary"):
                     try:
-                        cell = sheet.find(to_delete)
+                        cell = sheet.find(str(to_delete))
                         sheet.delete_rows(cell.row)
-                        st.success(f"Quote {to_delete} has been deleted.")
-                        st.rerun() # Refresh the app to update the view
-                    except Exception as e:
-                        st.error(f"Could not find row: {e}")
-            else:
-                st.info("No quotes found to delete.")
-                
+                        st.success(f"Quote {to_delete} deleted!")
+                        st.rerun()
+                    except:
+                        st.error("Could not locate that quote in the sheet.")
+        else:
+            st.write("Database is empty.")
+    except Exception as e:
+        st.error(f"Database Error: {e}")
+
+    st.divider()
+    
+    # --- VIEW DATA ---
+    if st.button("🔄 Refresh Data View"):
+        try:
+            # We already defined 'sheet' above
+            latest_data = sheet.get_all_records()
+            st.dataframe(pd.DataFrame(latest_data), use_container_width=True)
         except Exception as e:
-            st.error(f"Error loading delete list: {e}")
-
-        st.divider()
-
-        # --- VIEW DATA ---
-        if st.button("🔄 Refresh Data View"):
-            try:
-                # Re-fetching for the display
-                data = sheet.get_all_records()
-                if data:
-                    st.dataframe(pd.DataFrame(data), use_container_width=True)
-                else:
-                    st.info("The spreadsheet is currently empty.")
-            except Exception as e:
-                st.error(f"Could not load data: {e}")
+            st.error(f"Error refreshing: {e}")
