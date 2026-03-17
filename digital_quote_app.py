@@ -170,7 +170,7 @@ if 'last_quote' in st.session_state:
         else:
             st.warning("Please enter at least 1 unit to generate a preview.")
 
-   with tab2:
+with tab2:
         st.subheader("Google Sheets Database")
         sheet_url = "https://docs.google.com/spreadsheets/d/1wGEVCxH4wEra_BRa-3z9QWaH8g5dvCQy-xO2-KJhciM/edit"
         st.link_button("🚀 Open Full Spreadsheet (Edit Mode)", sheet_url, use_container_width=True)
