@@ -28,7 +28,10 @@ RATES = {
 def get_gsheet_client():
     """Authenticates using Streamlit Secrets."""
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds_dict = st.secrets["gcp_service_account"]
+    
+    # Updated this line to match your specific secret header:
+    creds_dict = st.secrets["connections"]["gsheets"] 
+    
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     return gspread.authorize(creds)
 
