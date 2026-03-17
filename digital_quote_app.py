@@ -81,8 +81,8 @@ st.download_button(
     use_container_width=True
 )
     
-    # Output as bytes
-    return pdf.output()
+# Output as bytes
+return pdf.output()
 
 # Set page configuration
 st.set_page_config(page_title="Digital Quotation System", layout="wide", page_icon="📝")
