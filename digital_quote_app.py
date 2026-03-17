@@ -2,6 +2,88 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
+from fpdf import FPDF
+import io
+
+def generate_pdf(data):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    # --- Font Setup ---
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.cell(0, 10, "DIGITAL QUOTATION", ln=True, align="C")
+    pdf.ln(10)
+    
+    # --- Metadata Section ---
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(40, 8, "Quote No:", 0)
+    pdf.set_font("Helvetica", "", 12)
+    pdf.cell(0, 8, f"{data['Quote No.']}", 0, 1)
+    
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(40, 8, "Client:", 0)
+    pdf.set_font("Helvetica", "", 12)
+    pdf.cell(0, 8, f"{data['Client']}", 0, 1)
+    
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(40, 8, "Date:", 0)
+    pdf.set_font("Helvetica", "", 12)
+    pdf.cell(0, 8, datetime.now().strftime("%Y-%m-%d"), 0, 1)
+    
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "I", 11)
+    pdf.multi_cell(0, 8, f"Project Description: {data['Description']}")
+    pdf.ln(10)
+    
+    # --- Table Header ---
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(100, 10, "Service Description", 1, 0, "C", fill=True)
+    pdf.cell(30, 10, "Qty", 1, 0, "C", fill=True)
+    pdf.cell(60, 10, "Total", 1, 1, "C", fill=True)
+    
+    # --- Table Rows ---
+    pdf.set_font("Helvetica", "", 10)
+    for item in data['items']:
+        if item['Qty'] > 0:
+            pdf.cell(100, 10, item['Service'], 1)
+            pdf.cell(30, 10, str(item['Qty']), 1, 0, "C")
+            pdf.cell(60, 10, f"R {item['Total']:,.2f}", 1, 1, "R")
+            
+    # --- Summary Totals ---
+    pdf.ln(5)
+    pdf.set_font("Helvetica", "B", 11)
+    
+    # Nett
+    pdf.cell(130, 8, "Nett Total:", 0, 0, "R")
+    pdf.cell(60, 8, f"R {data['Nett']:,.2f}", 0, 1, "R")
+    
+    # VAT
+    pdf.cell(130, 8, "VAT (15%):", 0, 0, "R")
+    pdf.cell(60, 8, f"R {data['Vat']:,.2f}", 0, 1, "R")
+    
+    # Gross
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_text_color(0, 123, 255) # Blue color for total
+    pdf.cell(130, 10, "GROSS TOTAL:", 0, 0, "R")
+    pdf.cell(60, 10, f"R {data['Gross']:,.2f}", 0, 1, "R")
+
+    # Create the PDF file in memory
+pdf_output = generate_pdf(q)
+
+# Streamlit download button
+st.download_button(
+    label="📥 Download Quote as PDF",
+    data=bytes(pdf_output),
+    file_name=f"Quotation_{q['Quote No.']}_{q['Client']}.pdf",
+    mime="application/pdf",
+    use_container_width=True
+)
+    
+    # Output as bytes
+    return pdf.output()
+
 # Set page configuration
 st.set_page_config(page_title="Digital Quotation System", layout="wide", page_icon="📝")
 
