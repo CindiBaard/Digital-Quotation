@@ -176,6 +176,39 @@ if 'last_quote' in st.session_state:
     
     st.write(f"**Client:** {q['Client']} | **Pre-Prod:** {q['Pre-Prod No.']} | **Date:** {datetime.now().strftime('%Y-%m-%d')}")
     st.info(f"**Project:** {q['Description']}")
+
+    # Create a new tab for Database view
+tab1, tab2 = st.tabs(["📄 Quotation Preview", "📊 Spreadsheet Database"])
+
+with tab1:
+    # ... (Keep your existing Quote Preview and PDF code here) ...
+    pass
+
+with tab2:
+    st.subheader("Google Sheets Database")
+    
+    # Option 1: A big button to open the actual sheet for editing
+    sheet_url = f"https://docs.google.com/spreadsheets/d/1wGEVCxH4wEra_BRa-3z9QWaH8g5dvCQy-xO2-KJhciM/edit"
+    st.link_button("🚀 Open Full Spreadsheet (Edit Mode)", sheet_url, use_container_width=True)
+    
+    st.divider()
+    
+    # Option 2: Show the data live in the app
+    if st.button("🔄 Refresh Data View"):
+        try:
+            client = get_gsheet_client()
+            sheet = client.open_by_key("1wGEVCxH4wEra_BRa-3z9QWaH8g5dvCQy-xO2-KJhciM").sheet1
+            
+            # Read all records into a Dataframe
+            data = sheet.get_all_records()
+            df_db = pd.DataFrame(data)
+            
+            if not df_db.empty:
+                st.dataframe(df_db, use_container_width=True)
+            else:
+                st.info("The spreadsheet is currently empty.")
+        except Exception as e:
+            st.error(f"Could not load data: {e}")
     
     # Filter and Display Table
     df = pd.DataFrame(q['items'])
